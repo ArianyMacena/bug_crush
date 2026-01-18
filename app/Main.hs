@@ -2,6 +2,7 @@ module Main where
 
 import System.IO
 import Control.Concurrent (threadDelay)
+import Text.Read (readMaybe)
 
 -- Importando nossos módulos
 import Types
@@ -64,16 +65,27 @@ getUserInput = do
     putStr "> "
     hFlush stdout
     line <- getLine
-    if line == "q" then return Nothing else
-        case words line of
-            [r, c, dir] -> do
-                let r1 = read r; c1 = read c
-                let (r2, c2) = case dir of
-                        "w" -> (r1-1, c1); "s" -> (r1+1, c1)
-                        "a" -> (r1, c1-1); "d" -> (r1, c1+1)
-                        _ -> (r1, c1)
-                return $ Just ((r1, c1), (r2, c2))
-            _ -> return $ Just ((-1,-1), (-1,-1))
+    
+    if line == "q" 
+        then return Nothing 
+        else case words line of
+            -- Verifica se o usuário digitou exatamente 3 coisas
+            [rStr, cStr, dir] -> 
+                -- Tenta converter as duas primeiras strings para Int de forma segura
+                case (readMaybe rStr, readMaybe cStr) of
+                    (Just r1, Just c1) -> do
+                        -- Se deu certo (são números), calcula o destino
+                        let (r2, c2) = case dir of
+                                "w" -> (r1-1, c1)
+                                "s" -> (r1+1, c1)
+                                "a" -> (r1, c1-1)
+                                "d" -> (r1, c1+1)
+                                _   -> (-1, -1) -- Direção inválida força erro
+                        return $ Just ((r1, c1), (r2, c2))
+                    
+                    _ -> return $ Just ((-1,-1), (-1,-1)) -- Se não forem números, retorna inválido
+            
+            _ -> return $ Just ((-1,-1), (-1,-1)) -- Se digitou número errado de palavras
 
 -- Loop Principal
 --Precisei refatorar para ser possível exibir elementos da interface
@@ -131,11 +143,11 @@ gameLoop nome pontos movimentos board = do
 --A quantidade de movimentos também começa com valores fixos (por enquanto não sabemos o valor exato)
 iniciarJogo :: String -> IO ()
 iniciarJogo nome = do
-    --Gera e conserta o tabuleira inicial
+    --Gera e conserta o tabuleiro inicial
     rawBoard <- generateBoard
     cleanBoard <- fixInitialMatches rawBoard
     let pontosIniciais = 0 --Pontuação inicial do jogador
-    let movimentosIniciais = 30 --Valor arbitrário
+    let movimentosIniciais = 20 --Valor arbitrário
     gameLoop nome pontosIniciais movimentosIniciais cleanBoard
 
 -- Entrada do Programa

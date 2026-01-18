@@ -139,17 +139,21 @@ renderHUD nome pontos movimentos = do
     putStrLn ""
 
 --7. Tela de fim de jogo
---Exibe o nome do jogador e a pontuação final 
---Ainda não avalia vitória ou derrota
---trabalha apenas com o fim dos movimentos(arbitrário)
 telaGameOver :: String -> Int -> IO ()
 telaGameOver nome pontos = do
     limparTela
     putStrLn "╔═══════════════════════════════════╗"
-    putStrLn "║           FIM DE JOGO             ║"
+    putStrLn "║             FIM DE JOGO           ║"
     putStrLn "╚═══════════════════════════════════╝"
     putStrLn (" Jogador: " ++ nome)
     putStrLn (" Pontuação final: " ++ show pontos)
+    putStrLn ""
+    
+    -- Lógica de vitória ou de derrota
+    if pontos >= 500
+        then putStrLn "       ★ PARABÉNS! VOCÊ VENCEU! ★       "
+        else putStrLn "      ☠  QUE PENA! VOCÊ PERDEU. ☠      "
+        
     putStrLn ""
     putStrLn " Pressione [ENTER] para voltar ao menu"
     _ <- getLine

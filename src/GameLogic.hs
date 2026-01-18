@@ -1,7 +1,7 @@
 module GameLogic where
 
 import Types
-import Board (get, set, randomCandy, replaceList)
+import Board (get, set, randomBug, replaceList)
 import Data.List (nub, intersect, partition)
 
 -- 1. Regras Puras
@@ -55,7 +55,7 @@ clearMatches board (c:cs) =
 stepGravity :: Board -> IO (Board, Bool)
 stepGravity board = do
     let topRow = board !! 0
-    newTopRow <- mapM (\c -> if c == Empty then randomCandy else return c) topRow
+    newTopRow <- mapM (\c -> if c == Empty then randomBug else return c) topRow
     let boardWithTop = replaceList 0 newTopRow board
 
     let (finalBoard, moved) =
@@ -90,9 +90,9 @@ fixInitialMatches board = do
 replaceAtCoords :: Board -> [Coord] -> IO Board
 replaceAtCoords board [] = return board
 replaceAtCoords board (c:cs) = do
-    newCandy <- randomCandy
-    let safeCandy = if newCandy == Empty then Red else newCandy
-    replaceAtCoords (set board c safeCandy) cs
+    newBug <- randomBug
+    let safeBug = if newBug == Empty then Red else newBug
+    replaceAtCoords (set board c safeBug) cs
 
 -- 5. Agrupamento de Combinações
 
