@@ -2,6 +2,7 @@ module Main where
 
 import System.IO
 import Control.Concurrent (threadDelay)
+import Text.Read (readMaybe)
 
 -- Importando nossos módulos
 import Types
@@ -64,16 +65,27 @@ getUserInput = do
     putStr "> "
     hFlush stdout
     line <- getLine
-    if line == "q" then return Nothing else
-        case words line of
-            [r, c, dir] -> do
-                let r1 = read r; c1 = read c
-                let (r2, c2) = case dir of
-                        "w" -> (r1-1, c1); "s" -> (r1+1, c1)
-                        "a" -> (r1, c1-1); "d" -> (r1, c1+1)
-                        _ -> (r1, c1)
-                return $ Just ((r1, c1), (r2, c2))
-            _ -> return $ Just ((-1,-1), (-1,-1))
+    
+    if line == "q" 
+        then return Nothing 
+        else case words line of
+            -- Verifica se o usuário digitou exatamente 3 coisas
+            [rStr, cStr, dir] -> 
+                -- Tenta converter as duas primeiras strings para Int de forma segura
+                case (readMaybe rStr, readMaybe cStr) of
+                    (Just r1, Just c1) -> do
+                        -- Se deu certo (são números), calcula o destino
+                        let (r2, c2) = case dir of
+                                "w" -> (r1-1, c1)
+                                "s" -> (r1+1, c1)
+                                "a" -> (r1, c1-1)
+                                "d" -> (r1, c1+1)
+                                _   -> (-1, -1) -- Direção inválida força erro
+                        return $ Just ((r1, c1), (r2, c2))
+                    
+                    _ -> return $ Just ((-1,-1), (-1,-1)) -- Se não forem números, retorna inválido
+            
+            _ -> return $ Just ((-1,-1), (-1,-1)) -- Se digitou número errado de palavras
 
 -- Loop Principal
 --Precisei refatorar para ser possível exibir elementos da interface
@@ -84,58 +96,63 @@ getUserInput = do
 --  board -> estado atual do tabuleiro
 --A pontuação é mantida como parâmetro explícito com valores temporários
 --aguardando a finalização da lógica de cálculo
+-- Loop Principal do Jogo
 gameLoop :: String -> Int -> Int -> Board -> IO () 
 gameLoop nome pontos movimentos board = do
-    --CONDIÇÂO DE FIM DE JOGO(temporário, se não quiserem basta remover a condição)
-    --Quando os movimentos acabam, encerro o loop
+    -- 1. Verifica Condição de Fim de Jogo
     if movimentos <= 0
-        then telaGameOver nome pontos
+        then telaGameOver nome pontos -- Exibe fim de jogo e RETORNA (sem chamar menu aqui)
         else do
-            limparTela --limpa a tela antes de redesenhar HUD e tabuleiro
-            renderHUD nome pontos movimentos--exibe HUD com nome do jogador e pontuação atual
+            -- 2. Renderiza a Interface
+            limparTela
+            renderHUD nome pontos movimentos
             printBoard board
+            
+            -- 3. Pede Input
             input <- getUserInput
             case input of
-                Nothing -> telaGameOver nome pontos >> loopMenu --Achei interessante que depois do fim do jogo, retornasse a tela de Menu Inicial
+                Nothing -> telaGameOver nome pontos -- Se digitou 'q', encerra
                 Just (c1, c2) -> do
                     if not (isValidMove c1 c2) 
-                        then gameLoop nome pontos movimentos board
+                        then do
+                            putStrLn "\nMovimento inválido!"
+                            threadDelay 1000000
+                            gameLoop nome pontos movimentos board
                         else do
+                            -- 4. Executa a Troca
                             let swapped = swap board c1 c2
+                            limparTela
+                            renderHUD nome pontos movimentos
                             printBoard swapped
                             putStrLn "\n   >>> TROCANDO... <<<"
-                            threadDelay 1500000 -- 1.5s
+                            threadDelay 1000000 -- 1.0s
                     
+                            -- 5. Verifica se houve Match
                             if null (findMatches swapped)
                                 then do
-                                    putStrLn "Inválido! Voltando..."
+                                    putStrLn "Sem combinação! Voltando..."
                                     threadDelay 1000000
-                                    gameLoop nome pontos movimentos board
+                                    gameLoop nome pontos movimentos board -- Desfaz o movimento (usa o board original)
                                 else do
-                                    (finalBoard, finalPoints) <- resolveCascades swapped 0
-                            
-                                    --PLACEHOLDER DA PONTUAÇÃO:
-                                    --No momentos os pontos não são calculados
-                                    let novosPontos = pontos + finalPoints
-                            
-                                    --PLACEHOLDER DE MOVIMENTOS:
-                                    --Cada jogada válida consome exatamente 1 movimento
-                                    --Essa regra pode ser alterada conforme a lógica final do jogo
+                                    -- 6. Resolve a Cascata (Explosões + Gravidade + Pontos)
+                                    -- O '0' é o multiplicador inicial do combo
+                                    (finalBoard, pontosGanhos) <- resolveCascades swapped 0
+                                    
+                                    let novosPontos = pontos + pontosGanhos
                                     let novosMovimentos = movimentos - 1
 
-                                    --Continua o jogo com o novo tabuleiro
+                                    -- 7. Recursão: Chama o próximo turno
                                     gameLoop nome novosPontos novosMovimentos finalBoard
 
---Inicia uma nova partida
---A pontuação começa em 0 e será atualizada conforme a lógica de contagem for integrada
---A quantidade de movimentos também começa com valores fixos (por enquanto não sabemos o valor exato)
 iniciarJogo :: String -> IO ()
 iniciarJogo nome = do
-    --Gera e conserta o tabuleira inicial
     rawBoard <- generateBoard
     cleanBoard <- fixInitialMatches rawBoard
-    let pontosIniciais = 0 --Pontuação inicial do jogador
-    let movimentosIniciais = 30 --Valor arbitrário
+    
+    let pontosIniciais = 0
+    let movimentosIniciais = 5 
+    
+    -- Inicia o loop do jogo
     gameLoop nome pontosIniciais movimentosIniciais cleanBoard
 
 -- Entrada do Programa
@@ -152,7 +169,8 @@ loopMenu = do
         1 -> do
             nome <- telaLogin
             iniciarJogo nome
-        2 -> telaRegras  >> loopMenu
+            loopMenu 
+        2 -> telaRegras >> loopMenu
         3 -> telaInstrucoes >> loopMenu
-        4 -> putStrLn "Saindo do jogo..."
+        4 -> putStrLn "Saindo do jogo..." 
         _ -> loopMenu

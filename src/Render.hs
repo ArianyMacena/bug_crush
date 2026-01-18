@@ -3,7 +3,7 @@ module Render where
 import Types
 
 -- Cores ANSI
-colorStr :: Candy -> String
+colorStr :: Bug -> String
 colorStr Red    = "\ESC[31mO\ESC[0m"
 colorStr Blue   = "\ESC[34mO\ESC[0m"
 colorStr Green  = "\ESC[32mO\ESC[0m"

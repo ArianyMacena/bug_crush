@@ -1,11 +1,11 @@
 module Types where
 
--- Tipos de Doces
-data Candy = Red | Blue | Green | Yellow | Purple | Empty
+-- Tipos de Insetos
+data Bug = Red | Blue | Green | Yellow | Purple | Empty
     deriving (Eq, Show)
 
 -- O Tabuleiro
-type Board = [[Candy]]
+type Board = [[Bug]]
 
 -- Coordenadas (Linha, Coluna)
 type Coord = (Int, Int)
