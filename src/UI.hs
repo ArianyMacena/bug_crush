@@ -151,8 +151,8 @@ telaGameOver nome pontos = do
     
     -- Lógica de vitória ou de derrota
     if pontos >= 500
-        then putStrLn "       ★ PARABÉNS! VOCÊ VENCEU! ★       "
-        else putStrLn "      ☠  QUE PENA! VOCÊ PERDEU. ☠      "
+        then putStrLn "      PARABÉNS! VOCÊ VENCEU!    "
+        else putStrLn "      QUE PENA! VOCÊ PERDEU.    "
         
     putStrLn ""
     putStrLn " Pressione [ENTER] para voltar ao menu"
